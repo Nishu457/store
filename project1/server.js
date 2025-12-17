@@ -60,8 +60,8 @@ const ADMIN_USERNAME = 'nishunishanth883';
 const ADMIN_PASSWORD_HASH = '$2a$10$4DOgbnbUeZCzUwP6b0VLde2ODbFsXRfZERj3lwHoGSKujW5qU5WgS'; // bcrypt hash of "yojana"
 
 // Verify the hash (you can uncomment to test)
-// const testHash = bcrypt.hashSync('nishu', 10);
-// console.log('Hash for password "nishu":', testHash);
+const testHash = bcrypt.compareSync('yojana', ADMIN_PASSWORD_HASH);
+console.log('✅ Password hash verification for "yojana":', testHash);
 
 // Middleware to check if user is authenticated
 const requireAuth = (req, res, next) => {
@@ -87,18 +87,28 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
 
+  console.log('Login attempt - Username:', username);
+  console.log('Password entered:', password);
+  console.log('Expected username:', ADMIN_USERNAME);
+
   // Validate input
   if (!username || !password) {
     return res.render('login', { error: 'Username and password are required' });
   }
 
   // Check credentials
-  if (username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
+  const isPasswordMatch = bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
+  console.log('Password match:', isPasswordMatch);
+  console.log('Username match:', username === ADMIN_USERNAME);
+
+  if (username === ADMIN_USERNAME && isPasswordMatch) {
     req.session.authenticated = true;
     req.session.username = username;
+    console.log('Login successful for:', username);
     return res.redirect('/dashboard');
   }
 
+  console.log('Login failed for username:', username);
   res.render('login', { error: 'Invalid username or password' });
 });
 
