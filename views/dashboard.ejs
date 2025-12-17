@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Personal Website</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">My Personal Website</h1>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><strong>👤 <%= username %></strong></li>
+                <li><a href="/logout" class="btn-logout">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="dashboard">
+            <h1>Welcome, <%= username %>!</h1>
+            
+            <div class="dashboard-grid">
+                <!-- Upload Section -->
+                <div class="dashboard-card">
+                    <h2>📤 Upload Files</h2>
+                    <p>Upload your documents, images, and other files securely.</p>
+                    
+                    <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="file">Choose File</label>
+                            <input 
+                                type="file" 
+                                id="file" 
+                                name="file" 
+                                required
+                            >
+                            <small>Allowed: PDF, Images (JPG, PNG, GIF), TXT, DOC, DOCX | Max: 10MB</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload File</button>
+                        <div id="uploadStatus"></div>
+                    </form>
+                </div>
+
+                <!-- Files Section -->
+                <div class="dashboard-card">
+                    <h2>📁 My Files</h2>
+                    
+                    <% if (files.length > 0) { %>
+                        <div class="files-list">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Filename</th>
+                                        <th>Size</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% files.forEach((file, index) => { %>
+                                        <tr>
+                                            <td><strong><%= file.name %></strong></td>
+                                            <td><%= file.size %></td>
+                                            <td><small><%= file.uploadedAt %></small></td>
+                                            <td class="actions">
+                                                <a href="/download/<%= file.name %>" class="btn-small btn-download">⬇️ Download</a>
+                                                <button onclick="deleteFile('<%= file.name %>', '<%= index %>')" class="btn-small btn-delete">🗑️ Delete</button>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <p class="no-files">📭 No files uploaded yet. Upload your first file above!</p>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Documentation Section -->
+            <div class="dashboard-card full-width">
+                <h2>📚 Documentation & Info</h2>
+                <div class="doc-content">
+                    <h3>Quick Start Guide</h3>
+                    <ul>
+                        <li><strong>Upload Files:</strong> Use the upload form to add documents and files to your personal storage.</li>
+                        <li><strong>Download Files:</strong> Click the download button next to any file to retrieve it.</li>
+                        <li><strong>Delete Files:</strong> Remove files you no longer need using the delete button.</li>
+                        <li><strong>Security:</strong> All files are encrypted and accessible only after login.</li>
+                    </ul>
+
+                    <h3>Security Features</h3>
+                    <ul>
+                        <li>✅ Password-protected login system</li>
+                        <li>✅ Session-based authentication (24-hour expiry)</li>
+                        <li>✅ File type validation</li>
+                        <li>✅ File size limitations (max 10MB)</li>
+                        <li>✅ Secure file naming to prevent conflicts</li>
+                        <li>✅ Directory traversal protection</li>
+                        <li>✅ HTTPS ready deployment</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 My Personal Website. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Handle file upload
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file');
+            const statusDiv = document.getElementById('uploadStatus');
+            const formData = new FormData();
+            
+            formData.append('file', fileInput.files[0]);
+            
+            statusDiv.innerHTML = '<p class="loading">⏳ Uploading...</p>';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<p class="success">✅ ' + data.message + '</p>';
+                    fileInput.value = '';
+                    
+                    // Reload page after 1 second
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    statusDiv.innerHTML = '<p class="error">❌ ' + data.message + '</p>';
+                }
+            } catch (err) {
+                statusDiv.innerHTML = '<p class="error">❌ Upload failed: ' + err.message + '</p>';
+            }
+        });
+
+        // Delete file function
+        async function deleteFile(filename, index) {
+            if (!confirm('Are you sure you want to delete this file?')) return;
+            
+            try {
+                const response = await fetch('/delete/' + filename, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ File deleted successfully');
+                    location.reload();
+                } else {
+                    alert('❌ Failed to delete file: ' + data.message);
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
