@@ -105,26 +105,37 @@ app.post('/login', (req, res) => {
 // Dashboard (protected)
 app.get('/dashboard', requireAuth, async (req, res) => {
   try {
-    // Get files from Cloudinary
-    const result = await cloudinary.api.resources({
-      type: 'upload',
-      prefix: 'personal-website-uploads/',
-      max_results: 500
-    });
+    let files = [];
+    
+    // Get files from Cloudinary if API credentials are configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      try {
+        const result = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: 'personal-website-uploads/',
+          max_results: 500
+        });
 
-    const files = result.resources.map(file => ({
-      name: file.public_id.split('/').pop(),
-      originalname: file.display_name || file.public_id.split('/').pop(),
-      size: (file.bytes / 1024).toFixed(2) + ' KB',
-      uploadedAt: new Date(file.created_at).toLocaleString(),
-      url: file.secure_url,
-      publicId: file.public_id
-    }));
+        files = result.resources.map(file => ({
+          name: file.public_id.split('/').pop(),
+          originalname: file.display_name || file.public_id.split('/').pop(),
+          size: (file.bytes / 1024).toFixed(2) + ' KB',
+          uploadedAt: new Date(file.created_at).toLocaleString(),
+          url: file.secure_url,
+          publicId: file.public_id
+        }));
+      } catch (cloudinaryError) {
+        console.error('Error fetching files from Cloudinary:', cloudinaryError.message);
+        files = [];
+      }
+    } else {
+      console.warn('Cloudinary credentials not fully configured');
+    }
 
     res.render('dashboard', { files, username: req.session.username });
   } catch (error) {
-    console.error('Error fetching files from Cloudinary:', error);
-    res.render('dashboard', { files: [], username: req.session.username, error: 'Error loading files' });
+    console.error('Error in dashboard route:', error);
+    res.render('dashboard', { files: [], username: req.session.username });
   }
 });
 
